@@ -15,10 +15,8 @@ public class OBBTree : MonoBehaviour
     // index of vertex on each triangle of the mesh
     int[] triangles;
 
-    //
-    List<int> candidatesTriangles = new List<int>(); 
-
     // candidates triangles for intersection with ray 
+    List<int> candidatesTriangles = new List<int>(); 
     
     // Store the recursivity level of OBB to be drawn
     // Use -1 to disable OBB drawing
@@ -26,12 +24,27 @@ public class OBBTree : MonoBehaviour
 	[SerializeField]
 	protected int levelToBeDrawn = -1;
 
+     // max itter 
+     private int max_itter = 15;
+     private int n = 0; 
+
     public void Start()
     {
         mesh = this.GetComponent<MeshFilter>().mesh;
         vertices = mesh.vertices;
-        triangles = mesh.triangles; 
+        triangles = mesh.triangles;
 
+        Vector3 mu = meanIsoBarycenter();
+
+        Matrix3x3 C = computeCovMatrix(mu);
+
+        List<Vector3> extremas = seekExtremaOOB(C.Transposed());
+
+        OBB obb = computeOBB(extremas);
+
+        root.obb = obb;
+        root.vertices = vertices;
+        root.triangles = triangles;
     }
 
     void Update()
@@ -46,20 +59,7 @@ public class OBBTree : MonoBehaviour
 	{		
 		closest_intersection_pt = new Vector3();
 
-
-        Vector3 mu = meanIsoBarycenter();
-
-        Matrix3x3 C = computeCovMatrix(mu);
-
-        List<Vector3> extremas = seekExtremaOOB(C.Transposed()); 
-
-
-        Debug.Log(mu);
-
-        Debug.Log(extremas[0]); 
-        Debug.Log(extremas[1]); 
-
-
+        
 
 
         return false;
@@ -171,11 +171,147 @@ public class OBBTree : MonoBehaviour
         return extrema;
     }
 
-  public OBB computeOBB()
+    public OBB computeOBB(List<Vector3> extremas)
     {
-        return new OBB();
+        OBB obb = new OBB();
+        Vector3 diag = extremas[1] - extremas[0];
+
+        // 
+        if(diag.x < diag.y)
+        {
+            if(diag.x < diag.z)
+            {
+                obb.shortAxis = OBB.Axis.X;
+                if(diag.y < diag.z)
+                {
+                    obb.medAxis = OBB.Axis.Y;
+                    obb.longAxis = OBB.Axis.Z;
+                }
+                else
+                {
+                    obb.medAxis = OBB.Axis.Z;
+                    obb.longAxis = OBB.Axis.Y;
+                }
+            }
+            else
+            {
+                obb.medAxis = OBB.Axis.X;
+                obb.shortAxis = OBB.Axis.Z;
+                obb.longAxis = OBB.Axis.Y;
+            }
+        }
+        else
+        {
+            if(diag.y < diag.z)
+            {
+                obb.shortAxis = OBB.Axis.Y;
+                if (diag.x < diag.z)
+                {
+                    obb.medAxis = OBB.Axis.X;
+                    obb.longAxis = OBB.Axis.Z;
+                }
+                else
+                {
+                    obb.medAxis = OBB.Axis.Z;
+                    obb.longAxis = OBB.Axis.X;
+                }
+            }
+            else
+            {
+                obb.medAxis = OBB.Axis.Y;
+                obb.shortAxis = OBB.Axis.Z;
+                obb.longAxis = OBB.Axis.X;
+            }
+        }
+
+        Bounds obbbounds = new Bounds(extremas[0]+diag/2, diag);
+
+        obb.bounds = obbbounds;
+
+        Quaternion q = Quaternion.LookRotation(new Vector3(0, 0, diag.z), new Vector3(0, diag.y, 0));
+
+        obb.orientation = q; 
+
+
+
+
+
+
+
+        return obb;
     }
 
+    public int[] getTrianglesInOBB(OBBTreeNode parentNode, Bounds bound)
+    {
+        for (int i = 0; i < parentNode.triangles.Length; i++)
+        {
+            
+        }
+    }
+
+    public OBBTreeNode nextNode(OBBTreeNode parentNode)
+    {
+        n++;
+        OBBTreeNode node = new OBBTreeNode();
+        if (n > max_itter)
+        {
+            return null; 
+        }
+        else
+        {
+        
+            Vector3 centerleft = parentNode.obb.bounds.center;
+            centerleft[(int)parentNode.obb.longAxis] -=  0.25f * parentNode.obb.bounds.size[(int)parentNode.obb.longAxis];
+
+            Vector3 centerright = parentNode.obb.bounds.center;
+            centerright[(int)parentNode.obb.longAxis] += 0.25f * parentNode.obb.bounds.size[(int)parentNode.obb.longAxis];
+
+            Vector3 size = parentNode.obb.bounds.size;
+            size[(int)parentNode.obb.longAxis] /= 2;
+
+            Bounds boundLeft = new Bounds(centerleft, size);
+            Bounds boundRight = new Bounds(centerright, size);
+
+            int N = parentNode.triangles.Length;
+
+            for (int i = 0; i < N; i += 3)
+            {
+                Vector3 p = vertices[triangles[i]];
+                Vector3 q = vertices[triangles[i + 1]];
+                Vector3 r = vertices[triangles[i + 2]];
+
+                               
+
+            }
+
+            /*Vector3 mu = meanIsoBarycenter();
+
+            Matrix3x3 C = computeCovMatrix(mu);
+
+            List<Vector3> extremas = seekExtremaOOB(C.Transposed());
+
+            node.obb = computeOBB(extremas);*/
+
+
+
+            // left node
+            node.childrenNodes[0].obb =    ;
+            node.childrenNodes[0].triangles = ; 
+
+
+            //right node
+            node.childrenNodes[1].obb =  ; 
+
+
+            //OBB obb = ;
+
+
+            // tester equation plan avec les ; 
+
+        }
+
+        return nextNode();
+    }
 	
 
 
