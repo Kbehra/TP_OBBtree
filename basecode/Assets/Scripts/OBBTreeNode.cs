@@ -6,8 +6,6 @@ public class OBBTreeNode
 {
 	public OBB obb;
 	public OBBTreeNode[] childrenNodes;
-    // Array with mesh vertices 
-    public Vector3[] vertices;
 
     // index of vertex on each triangle of the mesh
     public int[] triangles;
